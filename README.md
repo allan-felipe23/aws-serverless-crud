@@ -1,4 +1,4 @@
-# ☁️ AWS Serverless E-commerce API
+# ☁️ AWS Serverless CRUD API
 
 Este projeto é um CRUD completo (Create, Read, Update, Delete) de produtos utilizando arquitetura Serverless na AWS.
 
@@ -25,7 +25,8 @@ Este projeto é um CRUD completo (Create, Read, Update, Delete) de produtos util
 
 ## 📸 Screenshots
 
-*(Você pode adicionar prints aqui depois)*
+<img width="1916" height="972" alt="Captura de tela 2025-12-10 081849" src="https://github.com/user-attachments/assets/3d632a2b-de46-4848-a433-8003b7c3aec6" />
+
 
 ---
-Desenvolvido para fins de estudo sobre Arquitetura Cloud.
+Desenvolvido por Allan Borges para fins de estudo sobre Arquitetura Cloud.
