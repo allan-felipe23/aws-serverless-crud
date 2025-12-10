@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerenciador de Estoque Serverless</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-800 min-h-screen">
+    <nav class="bg-white border-b border-gray-200">
+      <div
+        class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center"
+      >
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">☁️</span>
+          <h1 class="text-xl font-semibold tracking-tight text-gray-900">
+            AWS Serverless
+            <span class="text-blue-600">Manager - Criado por Allan Borges</span>
+          </h1>
+        </div>
+        <div
+          class="text-xs font-medium bg-gray-100 text-gray-600 py-1 px-3 rounded-full"
+        >
+          v2.0 (Com Edição)
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-4 py-8">
+      <section
+        class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-10 transition-all duration-300"
+        id="sectionForm"
+      >
+        <div class="flex justify-between items-center mb-4">
+          <h2 id="formTitulo" class="text-lg font-semibold text-gray-700">
+            Adicionar Novo Produto
+          </h2>
+          <button
+            onclick="resetarFormulario()"
+            id="btnCancelar"
+            class="hidden text-sm text-gray-400 hover:text-red-500"
+          >
+            ✕ Cancelar Edição
+          </button>
+        </div>
+
+        <form id="formProduto" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div class="md:col-span-6">
+            <label class="block text-xs font-medium text-gray-500 mb-1"
+              >Nome do Produto</label
+            >
+            <input
+              type="text"
+              id="nome"
+              placeholder="Ex: Camiseta Preta"
+              required
+              class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            />
+          </div>
+
+          <div class="md:col-span-3">
+            <label class="block text-xs font-medium text-gray-500 mb-1"
+              >Preço (R$)</label
+            >
+            <input
+              type="number"
+              id="preco"
+              placeholder="0.00"
+              step="0.01"
+              required
+              class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            />
+          </div>
+
+          <div class="md:col-span-3">
+            <label class="block text-xs font-medium text-gray-500 mb-1"
+              >Quantidade</label
+            >
+            <input
+              type="number"
+              id="quantidade"
+              placeholder="0"
+              required
+              class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            />
+          </div>
+
+          <button
+            type="submit"
+            id="btnSubmit"
+            class="md:col-span-12 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors shadow-md flex justify-center items-center gap-2"
+          >
+            <span>+ Cadastrar Produto</span>
+          </button>
+        </form>
+      </section>
+
+      <section>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-800">Estoque Atual</h2>
+          <button
+            onclick="carregarProdutos()"
+            class="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+          >
+            🔄 Atualizar Lista
+          </button>
+        </div>
+
+        <div
+          id="listaProdutos"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <div class="col-span-full text-center py-12 text-gray-400">
+            Carregando produtos...
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // ============================================================
+      // ⚠️ CONFIGURAÇÃO: Coloque sua URL aqui (sem a barra no final)
+      // ============================================================
+      const API_URL =
+        "https://9132xbfqh3.execute-api.us-east-1.amazonaws.com/produtos";
+
+      let idParaEditar = null; // Controla se é POST (null) ou PUT (id)
+
+      // Inicialização
+      document.addEventListener("DOMContentLoaded", carregarProdutos);
+
+      // --- 1. LISTAR (GET) ---
+      async function carregarProdutos() {
+        const container = document.getElementById("listaProdutos");
+        container.innerHTML =
+          '<div class="col-span-full flex justify-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>';
+
+        try {
+          const response = await fetch(API_URL);
+          const data = await response.json();
+
+          container.innerHTML = ""; // Limpa loading
+
+          if (data.length === 0) {
+            container.innerHTML = `
+                        <div class="col-span-full text-center py-10 bg-white rounded-xl border border-dashed border-gray-300">
+                            <p class="text-gray-500">Nenhum produto encontrado.</p>
+                            <p class="text-sm text-gray-400 mt-1">Utilize o formulário acima para adicionar.</p>
+                        </div>`;
+            return;
+          }
+
+          // Opcional: Ordenar por nome
+          // data.sort((a, b) => a.nome.localeCompare(b.nome));
+
+          data.forEach((produto) => {
+            const card = document.createElement("div");
+            card.className =
+              "bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group";
+
+            // Truque para passar o objeto JSON para a função onclick sem quebrar as aspas
+            const produtoSafe = JSON.stringify(produto).replace(/"/g, "&quot;");
+
+            card.innerHTML = `
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-gray-800 text-lg truncate pr-2">${
+                              produto.nome
+                            }</h3>
+                            <span class="bg-green-50 text-green-700 text-xs font-bold px-2.5 py-1 rounded-md border border-green-100">
+                                R$ ${parseFloat(produto.preco).toFixed(2)}
+                            </span>
+                        </div>
+                        
+                        <div class="text-sm text-gray-500 mb-4 flex gap-4">
+                            <span>📦 Qtd: <strong class="text-gray-700">${
+                              produto.quantidade
+                            }</strong></span>
+                            <span>🏷️ ${produto.categoria || "Geral"}</span>
+                        </div>
+
+                        <div class="flex gap-2 pt-3 border-t border-gray-50 mt-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <button onclick="prepararEdicao(${produtoSafe})" 
+                                class="flex-1 bg-amber-50 text-amber-600 hover:bg-amber-100 py-2 rounded-lg text-sm font-medium transition-colors">
+                                ✏️ Editar
+                            </button>
+                            <button onclick="deletarProduto('${produto.id}')" 
+                                class="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 rounded-lg text-sm font-medium transition-colors">
+                                🗑️ Excluir
+                            </button>
+                        </div>
+                    `;
+            container.appendChild(card);
+          });
+        } catch (error) {
+          console.error(error);
+          container.innerHTML =
+            '<p class="text-red-500 col-span-full text-center bg-red-50 p-4 rounded-lg">Erro ao conectar com a API. Verifique o console.</p>';
+        }
+      }
+
+      // --- 2. PREPARAR EDIÇÃO (UI) ---
+      function prepararEdicao(produto) {
+        // Preenche inputs
+        document.getElementById("nome").value = produto.nome;
+        document.getElementById("preco").value = produto.preco;
+        document.getElementById("quantidade").value = produto.quantidade;
+
+        // Muda visual do formulário para "Modo Edição"
+        const btn = document.getElementById("btnSubmit");
+        const titulo = document.getElementById("formTitulo");
+        const btnCancelar = document.getElementById("btnCancelar");
+        const section = document.getElementById("sectionForm");
+
+        btn.innerHTML = "<span>💾 Salvar Alterações</span>";
+        btn.className =
+          "md:col-span-12 mt-2 bg-amber-500 hover:bg-amber-600 text-white font-medium py-3 rounded-lg transition-colors shadow-md flex justify-center items-center gap-2";
+
+        titulo.innerText = `Editando: ${produto.nome}`;
+        titulo.className = "text-lg font-semibold text-amber-600";
+
+        btnCancelar.classList.remove("hidden");
+        section.classList.add("ring-2", "ring-amber-100"); // Destaque visual
+
+        idParaEditar = produto.id; // Define ID global
+
+        // Rola suavemente até o topo
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      // --- 3. SUBMIT (POST ou PUT) ---
+      document
+        .getElementById("formProduto")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const btn = document.getElementById("btnSubmit");
+          const textoOriginal = btn.innerHTML;
+          btn.innerHTML = "⏳ Processando...";
+          btn.disabled = true;
+
+          const dados = {
+            nome: document.getElementById("nome").value,
+            preco: parseFloat(document.getElementById("preco").value),
+            quantidade: parseInt(document.getElementById("quantidade").value),
+            descricao: idParaEditar ? "Editado no Front" : "Criado no Front",
+          };
+
+          try {
+            let response;
+
+            if (idParaEditar) {
+              // MODO ATUALIZAÇÃO (PUT)
+              response = await fetch(`${API_URL}/${idParaEditar}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dados),
+              });
+            } else {
+              // MODO CRIAÇÃO (POST)
+              response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dados),
+              });
+            }
+
+            if (response.ok) {
+              resetarFormulario();
+              carregarProdutos(); // Recarrega a lista
+              // Pequeno feedback visual
+              const msg = idParaEditar ? "Atualizado!" : "Cadastrado!";
+              console.log(msg);
+            } else {
+              const erro = await response.json();
+              alert("Erro: " + (erro.erro || "Falha na requisição"));
+            }
+          } catch (error) {
+            console.error(error);
+            alert("Erro de conexão. Verifique se a API está online.");
+          } finally {
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+          }
+        });
+
+      // --- 4. RESETAR FORMULÁRIO ---
+      function resetarFormulario() {
+        document.getElementById("formProduto").reset();
+        idParaEditar = null;
+
+        // Restaura visual original (Azul)
+        const btn = document.getElementById("btnSubmit");
+        const titulo = document.getElementById("formTitulo");
+        const btnCancelar = document.getElementById("btnCancelar");
+        const section = document.getElementById("sectionForm");
+
+        btn.innerHTML = "<span>+ Cadastrar Produto</span>";
+        btn.className =
+          "md:col-span-12 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors shadow-md flex justify-center items-center gap-2";
+
+        titulo.innerText = "Adicionar Novo Produto";
+        titulo.className = "text-lg font-semibold text-gray-700";
+
+        btnCancelar.classList.add("hidden");
+        section.classList.remove("ring-2", "ring-amber-100");
+      }
+
+      // --- 5. DELETAR (DELETE) ---
+      async function deletarProduto(id) {
+        if (
+          !confirm("Tem certeza que deseja remover este item permanentemente?")
+        )
+          return;
+
+        // Otimista: remove visualmente antes (opcional, mas fica mais rápido pro usuário)
+        // Mas vamos fazer o padrão: esperar a API
+        try {
+          await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+          carregarProdutos();
+        } catch (error) {
+          alert("Erro ao deletar");
+        }
+      }
+    </script>
+  </body>
+</html>
